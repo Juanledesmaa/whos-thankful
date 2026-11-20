@@ -6,7 +6,7 @@ import { randomBytes, randomInt } from "node:crypto";
 
 const CODE_LETTERS = "ABCDEFGHJKMNPQRSTUVWXYZ"; // no I, L, O: easy to misread on a projector
 const MAX_PLAYERS = 60;
-const MIN_PLAYERS = 3;
+const MIN_PLAYERS = 2;
 const NAME_MAX = 16;
 const TEXT_MAX = 140;
 const PROMPT_MAX = 100;
