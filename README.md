@@ -12,7 +12,14 @@ A Thanksgiving game for a group. Everyone writes what they're thankful for on th
 
 Scoring: 100 for a right guess. The writer earns up to 100 for stumping the room.
 
-Host controls: **Skip this answer** hides an answer without revealing the author. The × on a name removes a player (before guessing starts). Keep the host tab open on the same browser; refreshing it is fine.
+Host controls:
+
+- **Reset game** (top right) goes back to the lobby from any point. Answers and scores are cleared, players stay in the room.
+- **Play again and keep scores** on the final screen starts a new question with the running totals.
+- **Skip this answer** hides an answer without revealing the author.
+- The × on a name removes a player (before guessing starts).
+
+Keep the host tab open on the same browser; refreshing it is fine. Leave the question blank to use the default one.
 
 ## Deploy to Netlify
 
