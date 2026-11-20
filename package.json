@@ -1,0 +1,12 @@
+{
+  "name": "guess-whos-thankful",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "local": "node dev-server.mjs",
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9"
+  }
+}
