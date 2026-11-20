@@ -344,7 +344,7 @@
                 .map((c) => `<button class="name" data-act="vote" data-pub="${esc(c.pub)}" aria-pressed="${c.pub === r.myVote}">${esc(c.name)}</button>`)
                 .join("")}
             </div>
-            <p class="note">${picked ? `You picked ${esc(picked.name)}. You can change it until the reveal.` : "Tap a name to lock in your guess."}</p>
+            <p class="note">${picked ? `You picked ${esc(picked.name)}. Changing it now counts as a later guess.` : "Faster right guesses score more."}</p>
           </section>`;
       }
     }
@@ -353,10 +353,11 @@
       const r = v.reveal;
       id += `:${r.number}`;
       const result = {
-        correct: `<p class="result good">You got it. +${r.points}</p>`,
+        correct: `<p class="result good">You got it. +${r.gained}</p>
+          <p class="note">${r.right.length > 1 ? `${ordinal(r.speedRank)} fastest of ${r.right.length} right guesses.` : "The only right guess."}</p>`,
         wrong: `<p class="result">Not this time.</p>`,
         none: `<p class="result">You didn't guess on this one.</p>`,
-        author: `<p class="result good">That was you. +${r.bonus} for stumping the room.</p>`,
+        author: `<p class="result good">That was you. +${r.gained} for stumping the room.</p>`,
       }[r.mine] ?? "";
       body = `
         <section class="card center">
@@ -509,8 +510,8 @@
           <section class="stack">
             ${placecard({ label: `Answer ${r.number} of ${r.total}`, text: r.text, foot: `${esc(r.author)} wrote this`, footClass: "revealed" })}
             <p class="tallyline">
-              ${r.rightNames.length
-                ? `${esc(r.rightNames.join(", "))} guessed right.`
+              ${r.right.length
+                ? `Right, fastest first: ${r.right.map((g) => `${esc(g.name)} +${g.points}`).join(", ")}.`
                 : r.votersCount ? "Nobody guessed it." : "No guesses came in."}
               ${r.bonus ? `${esc(r.author)} earns ${r.bonus} for stumping the room.` : ""}
             </p>

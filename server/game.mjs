@@ -10,7 +10,8 @@ const MIN_PLAYERS = 2;
 const NAME_MAX = 16;
 const TEXT_MAX = 140;
 const PROMPT_MAX = 100;
-const POINTS_CORRECT = 100;
+const POINTS_FASTEST = 100; // first right guess of the round
+const POINTS_SLOWEST = 50; // last right guess of the round
 const LOCK_WAIT_MS = 8000;
 const LOCK_STALE_MS = 5000;
 export const DEFAULT_PROMPT = "What are you thankful for this year?";
@@ -115,6 +116,7 @@ function requirePlayer(room, body) {
 function advance(room) {
   room.round += 1;
   room.votes = {};
+  room.voteAt = {};
   room.phase = room.round >= room.order.length ? "final" : "guess";
 }
 
@@ -123,6 +125,7 @@ function clearRound(room) {
   room.order = [];
   room.round = 0;
   room.votes = {};
+  room.voteAt = {};
   room.history = [];
   room.phase = "lobby";
 }
@@ -159,6 +162,8 @@ const ACTIONS = {
     if (player.pub === author) throw new GameError("That one is yours. Sit this round out.");
     const target = String(body.target ?? "");
     if (!room.order.includes(target) || target === player.pub) throw new GameError("Pick one of the names.");
+    room.voteAt ??= {};
+    if (room.votes[player.pub] !== target) room.voteAt[player.pub] = Date.now();
     room.votes[player.pub] = target;
   },
 
@@ -178,6 +183,7 @@ const ACTIONS = {
     room.order = shuffle(authors);
     room.round = 0;
     room.votes = {};
+    room.voteAt = {};
     room.history = [];
     room.phase = "guess";
   },
@@ -187,14 +193,22 @@ const ACTIONS = {
     if (room.phase !== "guess") throw wrongPhase();
     const author = room.order[room.round];
     const voters = Object.keys(room.votes);
-    const right = voters.filter((pub) => room.votes[pub] === author);
+    // Right guesses, fastest first. The quickest earns POINTS_FASTEST, the slowest
+    // POINTS_SLOWEST, everyone between on an even slope. Wrong guesses earn nothing.
+    const at = room.voteAt ?? {};
+    const right = voters.filter((pub) => room.votes[pub] === author).sort((a, b) => (at[a] ?? 0) - (at[b] ?? 0));
+    const points = {};
+    right.forEach((pub, i) => {
+      const slide = right.length > 1 ? i / (right.length - 1) : 0;
+      points[pub] = Math.round(POINTS_FASTEST - (POINTS_FASTEST - POINTS_SLOWEST) * slide);
+    });
     // The writer earns up to 100 for stumping the room, in steps of 10.
     const bonus = voters.length ? Math.round(((voters.length - right.length) / voters.length) * 10) * 10 : 0;
     for (const p of room.players) {
-      if (right.includes(p.pub)) p.score += POINTS_CORRECT;
+      p.score += points[p.pub] ?? 0;
       if (p.pub === author) p.score += bonus;
     }
-    room.history.push({ author, text: room.subs[author], votes: { ...room.votes }, bonus });
+    room.history.push({ author, text: room.subs[author], votes: { ...room.votes }, right, points, bonus });
     room.phase = "reveal";
   },
 
@@ -285,6 +299,11 @@ function viewFor(room, body) {
     const counts = {};
     for (const target of Object.values(last.votes)) counts[target] = (counts[target] ?? 0) + 1;
     const voters = Object.keys(last.votes);
+    // Answers revealed before speed scoring shipped have no `right`/`points`:
+    // they were worth a flat 100 each.
+    const right = last.right ?? voters.filter((pub) => last.votes[pub] === last.author);
+    const points = last.points ?? Object.fromEntries(right.map((pub) => [pub, POINTS_FASTEST]));
+    const gained = me ? (me.pub === last.author ? last.bonus : points[me.pub] ?? 0) : 0;
     let mine = null;
     if (me) {
       if (me.pub === last.author) mine = "author";
@@ -297,13 +316,17 @@ function viewFor(room, body) {
       text: last.text,
       author: nameOf(last.author),
       bonus: last.bonus,
-      points: POINTS_CORRECT,
+      gained,
+      speedRank: me ? right.indexOf(me.pub) + 1 : 0,
       votersCount: voters.length,
       tally: room.order
         .filter((pub) => counts[pub] || pub === last.author)
         .map((pub) => ({ name: nameOf(pub), count: counts[pub] ?? 0, isAuthor: pub === last.author }))
         .sort((a, b) => b.count - a.count || byName(a, b)),
-      rightNames: voters.filter((pub) => last.votes[pub] === last.author).map(nameOf).sort(),
+      right: right.map((pub) => ({ name: nameOf(pub), points: points[pub] })),
+      // Kept so a browser still running the previous page (open during a deploy) keeps working.
+      rightNames: right.map(nameOf).sort(),
+      points: gained || POINTS_FASTEST,
       isLast: room.round + 1 >= room.order.length,
       mine,
     };

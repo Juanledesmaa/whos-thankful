@@ -10,7 +10,7 @@ A Thanksgiving game for a group. Everyone writes what they're thankful for on th
 4. Press **Start guessing**. For each answer: the room votes, you press **Reveal who wrote it**, then **Next answer**.
 5. **End the game** whenever you like. The final screen shows the podium and every answer with its author.
 
-Scoring: 100 for a right guess. The writer earns up to 100 for stumping the room.
+Scoring: right guesses score by speed. The fastest right guess earns 100, the slowest 50, the rest in between. Changing your guess counts as a new, later guess. The writer earns up to 100 for stumping the room. Scores add up across all answers and the final screen shows the totals.
 
 Host controls:
 
